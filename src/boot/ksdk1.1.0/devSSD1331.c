@@ -160,7 +160,18 @@ devSSD1331init(void)
 	 *	out how to fill the entire screen with the brightest shade
 	 *	of green.
 	 */
-
+    
+    writeCommand(kSSD1331CommandDRAWRECT);
+    writeCommand(0x00);
+    writeCommand(0x00);
+    writeCommand(0x5F);
+    writeCommand(0x3F);
+    writeCommand(0x00);
+    writeCommand(0x3F);
+    writeCommand(0x00);
+    writeCommand(0x00);
+    writeCommand(0x3F);
+    writeCommand(0x00);
 
 
 //	SEGGER_RTT_WriteString(0, "\r\n\tDone with draw rectangle...\n");
