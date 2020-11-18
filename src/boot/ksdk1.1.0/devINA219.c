@@ -27,7 +27,7 @@ void
 initINA219current(const uint8_t i2cAddress, WarpI2CDeviceState volatile *  deviceStatePointer)
 {
 	deviceStatePointer->i2cAddress	= i2cAddress;
-	deviceStatePointer->signalType	= (	kWarpTypeMaskCurrent	);
+	//deviceStatePointer->signalType	= (	kWarpTypeMaskCurrent	);
 	return;
 }
 
