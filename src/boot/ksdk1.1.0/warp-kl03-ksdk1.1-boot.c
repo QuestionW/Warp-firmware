@@ -2472,16 +2472,12 @@ main(void)
 				break;
 			}
 
-
-			case '!':
-			{
-#				ifdef WARP_BUILD_ENABLE_INA219
-				for (int i =0, i<1000, ++i)
-				{
-					enableI2Cpins(menuI2cPullupValue);
-					printSensorDataINA219();
-				}
-#				endif
+				
+			case 'q':
+			{				
+				enableI2Cpins(menuI2cPullupValue);
+				readSensorRegisterINA219(0x04);
+				
 				break;
 			}
 

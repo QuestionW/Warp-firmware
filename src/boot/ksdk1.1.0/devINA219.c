@@ -15,116 +15,112 @@
 #include "warp.h"
 
 
-extern volatile WarpI2CDeviceState	deviceINA219State;
+extern volatile WarpI2CDeviceState	deviceINA219currentState;
 extern volatile uint32_t		gWarpI2cBaudRateKbps;
-extern volatile uint32_t		gWarpI2cTimeoutMilliseconds;
-extern volatile uint32_t		gWarpSupplySettlingDelayMilliseconds;
 
 
 
+/*
+ *	INA219 thing.
+ */
 void
-initINA219(const uint8_t i2cAddress, WarpI2CDeviceState volatile *  deviceStatePointer)
+initINA219current(const uint8_t i2cAddress, WarpI2CDeviceState volatile *  deviceStatePointer)
 {
 	deviceStatePointer->i2cAddress	= i2cAddress;
+	deviceStatePointer->signalType	= (	kWarpTypeMaskCurrent	);
 	return;
 }
 
 WarpStatus
-readSensorRegisterINA219(int numberOfBytes)
-{
-//	uint8_t		cmdBuf[1];
-	i2c_status_t	status;
-
-	USED(numberOfBytes);
+readSensorRegisterINA219(uint8_t deviceRegister)
+{	// Create variables
+        uint8_t txBuf[2]        = {0xFF, 0xFF};
+	uint8_t 	cmdBuf[1]	= {0xFF};
+	i2c_status_t	returnValue;
 
 	i2c_device_t slave =
 	{
-		.address = deviceINA219State.i2cAddress,
+		.address = deviceINA219currentState.i2cAddress,
 		.baudRate_kbps = gWarpI2cBaudRateKbps
 	};
+	SEGGER_RTT_WriteString(0, "Set I2C parameters");
+	
+	txBuf[0] = 0xFF; // Setting these equal to zero will lead to powerdown...
+        txBuf[1] = 0xFF;
+        cmdBuf[0] = 0x00; // Configuration address
 
+        returnValue = I2C_DRV_MasterSendDataBlocking(
+                                                      0, // I2C peripheral instance,
+                                                      &slave,
+                                                      cmdBuf,
+                                                      1,
+                                                      txBuf,
+                                                      2,
+                                                      100); // timeout in milliseconds //
+        
+	SEGGER_RTT_printf(0, "Sent something to the sensor");
+	
+	// Reset
+	cmdBuf[0] = 0x05; // Calibration register address
 
-	//cmdBuf[0] = deviceRegister;
-	// From the data sheet, read address is set by a pointer on the current sensor chip and
-	// must be set by a write command. The device address is therefore not sent during the read
-	// command and so cmdBuf size should be 0
-	status = I2C_DRV_MasterReceiveDataBlocking(
+	txBuf[0] = 0xC8; // Calibration value MSB
+	txBuf[1] = 0x00; // Calibration value LSB
+
+	// Send bits to the calibration register
+	returnValue = I2C_DRV_MasterSendDataBlocking(
+                                                      0 /* I2C peripheral instance */,
+                                                      &slave,
+                                                      cmdBuf,
+                                                      1,
+                                                      txBuf,
+                                                      2,
+                                                      100 /* timeout in milliseconds */);
+
+        OSA_TimeDelay(100);
+	SEGGER_RTT_WriteString(0, "Set calibration register");
+	// Write to the current sensor (prod it)
+	txBuf[0] = 0x01;
+	txBuf[1] = 0x01;
+	cmdBuf[0] = 0x04;
+
+	returnValue = I2C_DRV_MasterSendDataBlocking(
+		0,
+		&slave,
+		cmdBuf,
+		1,
+		txBuf,
+		0,
+		100);
+        
+        // Read current/power/voltage
+        
+	cmdBuf[0] = 0x04; // Current register address
+	for(int i = 0; i<1000; i++){
+        	returnValue = I2C_DRV_MasterReceiveDataBlocking(
 							0 /* I2C peripheral instance */,
 							&slave,
 							NULL,
 							0,
-							(uint8_t *)deviceINA219State.i2cBuffer,
-							numberOfBytes,
-							gWarpI2cTimeoutMilliseconds);
-	if (status != kStatus_I2C_Success)
-	{
-		return kWarpStatusDeviceCommunicationFailed;
+							(uint8_t *)deviceINA219currentState.i2cBuffer,
+							2,// 2 bytes of data received
+							500 /* timeout in milliseconds */);
+		SEGGER_RTT_printf(0, "\n\r %02x%02x", deviceINA219currentState.i2cBuffer[0], deviceINA219currentState.i2cBuffer[1]);
 	}
 
-	return kWarpStatusOK;
-}
+	SEGGER_RTT_printf(0, "\r\nI2C_DRV_MasterReceiveData returned [%d]\n", returnValue);
 
-
-WarpStatus
-writeSensorRegisterINA219(uint8_t deviceRegister, uint8_t payload, uint16_t menuI2cPullupValue)
-{
-	uint8_t		payloadByte[1], commandByte[1];
-	i2c_status_t	status;
-
-	i2c_device_t slave =
+	if (returnValue == kStatus_I2C_Success)
 	{
-		.address = deviceINA219State.i2cAddress,
-		.baudRate_kbps = gWarpI2cBaudRateKbps
-	};
-
-	commandByte[0] = deviceRegister;
-	payloadByte[0] = payload;
-
-	status = I2C_DRV_MasterSendDataBlocking(
-							0 /* I2C instance */,
-							&slave,
-							commandByte,
-							1,
-							payloadByte,
-							0,
-							gWarpI2cTimeoutMilliseconds);
-
-	if (status != kStatus_I2C_Success)
-	{
-		return kWarpStatusDeviceCommunicationFailed;
+		SEGGER_RTT_printf(0, "\r[0x%02x]	0x%02x\n", cmdBuf[0], deviceINA219currentState.i2cBuffer[0]);
+		SEGGER_RTT_WriteString(0, "HOORAY!");
 	}
+	else
+	{
+//		SEGGER_RTT_printf(0, kWarpConstantStringI2cFailure, cmdBuf[0], returnValue);
+		SEGGER_RTT_WriteString(0, "Didn't work");
+		return kWarpStatusDeviceCommunicationFailed;
+	}	
+
 
 	return kWarpStatusOK;
-}
-
-
-void
-printSensorDataINA219()
-{
-	uint16_t	readSensorRegisterValueLSB;
-	uint16_t	readSensorRegisterValueMSB;
-	int16_t		readSensorRegisterValueCombined;
-
-	// Set pointer address to Bus Voltage (0x02 from data sheet)
-	writeSensorRegisterINA219(0x02,0x00,1);
-
-	// Read both MSB and LSB of Bus Voltage:
-	readSensorRegisterINA219(2);
-	readSensorRegisterValueMSB = deviceINA219State.i2cBuffer[0];
-	readSensorRegisterValueLSB = deviceINA219State.i2cBuffer[1];
-	// Taking the top 12 bits as defined by the data sheet:
-	readSensorRegisterValueCombined = ((readSensorRegisterValueMSB & 0xFF) << 5) | ((readSensorRegisterValueLSB & 0xF8) >> 2);
-	//SEGGER_RTT_printf(0, "\nBus Voltage Reading: %d, giving Bus Voltage: %dmV", readSensorRegisterValueCombined, readSensorRegisterValueCombined * 4);
-	SEGGER_RTT_printf(0, "\n%d", readSensorRegisterValueCombined * 4);
-
-	// Set pointer address to Shunt Voltage (0x01 from data sheet)
-        writeSensorRegisterINA219(0x01,0x00,1);
-        // Read both MSB and LSB of Shunt Voltage:
-        readSensorRegisterINA219(2);
-        readSensorRegisterValueMSB = deviceINA219State.i2cBuffer[0];
-        readSensorRegisterValueLSB = deviceINA219State.i2cBuffer[1];
-        readSensorRegisterValueCombined = ((readSensorRegisterValueMSB & 0xFF) << 8) | (readSensorRegisterValueLSB & 0xFF);
-        //SEGGER_RTT_printf(0, "\nShunt Voltage Reading: %d, giving Shunt Voltage: %duV, giving Current: %duA", readSensorRegisterValueCombined,readSensorRegisterValueCombined*10, readSensorRegisterValueCombined*100);
-		SEGGER_RTT_printf(0, "\n%d", readSensorRegisterValueCombined * 100);
-
 }
