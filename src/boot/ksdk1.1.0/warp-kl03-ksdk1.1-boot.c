@@ -116,7 +116,7 @@ volatile WarpI2CDeviceState			deviceMMA8451QState;
 #endif
 
 #ifdef WARP_BUILD_ENABLE_DEVINA219
-volatile WarpI2CDeviceState			deviceINA219State;
+volatile WarpI2CDeviceState			deviceINA219currentState;
 #endif
 
 #ifdef WARP_BUILD_ENABLE_DEVLPS25H
@@ -1247,7 +1247,7 @@ main(void)
 #endif
 
 #ifdef WARP_BUILD_ENABLE_DEVINA219
-	initINA219(   0x40 	/* i2cAddress */, 	&deviceINA219State	);
+	initINA219current(   0x40 	/* i2cAddress */, 	&deviceINA219currentState	);
 #endif
 
 #ifdef WARP_BUILD_ENABLE_DEVLPS25H
