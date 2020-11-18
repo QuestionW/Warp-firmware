@@ -15,7 +15,7 @@
 #include "warp.h"
 
 
-extern volatile WarpI2CDeviceState	deviceINA219currentState;
+extern volatile WarpI2CDeviceState	deviceINA219State;
 extern volatile uint32_t		gWarpI2cBaudRateKbps;
 
 
@@ -24,7 +24,7 @@ extern volatile uint32_t		gWarpI2cBaudRateKbps;
  *	INA219 thing.
  */
 void
-initINA219current(const uint8_t i2cAddress, WarpI2CDeviceState volatile *  deviceStatePointer)
+initINA219(const uint8_t i2cAddress, WarpI2CDeviceState volatile *  deviceStatePointer)
 {
 	deviceStatePointer->i2cAddress	= i2cAddress;
 	//deviceStatePointer->signalType	= (	kWarpTypeMaskCurrent	);
@@ -40,7 +40,7 @@ readSensorRegisterINA219(uint8_t deviceRegister)
 
 	i2c_device_t slave =
 	{
-		.address = deviceINA219currentState.i2cAddress,
+		.address = deviceINA219State.i2cAddress,
 		.baudRate_kbps = gWarpI2cBaudRateKbps
 	};
 	SEGGER_RTT_WriteString(0, "Set I2C parameters");
@@ -101,17 +101,17 @@ readSensorRegisterINA219(uint8_t deviceRegister)
 							&slave,
 							NULL,
 							0,
-							(uint8_t *)deviceINA219currentState.i2cBuffer,
+							(uint8_t *)deviceINA219State.i2cBuffer,
 							2,// 2 bytes of data received
 							500 /* timeout in milliseconds */);
-		SEGGER_RTT_printf(0, "\n\r %02x%02x", deviceINA219currentState.i2cBuffer[0], deviceINA219currentState.i2cBuffer[1]);
+		SEGGER_RTT_printf(0, "\n\r %02x%02x", deviceINA219State.i2cBuffer[0], deviceINA219State.i2cBuffer[1]);
 	}
 
 	SEGGER_RTT_printf(0, "\r\nI2C_DRV_MasterReceiveData returned [%d]\n", returnValue);
 
 	if (returnValue == kStatus_I2C_Success)
 	{
-		SEGGER_RTT_printf(0, "\r[0x%02x]	0x%02x\n", cmdBuf[0], deviceINA219currentState.i2cBuffer[0]);
+		SEGGER_RTT_printf(0, "\r[0x%02x]	0x%02x\n", cmdBuf[0], deviceINA219State.i2cBuffer[0]);
 		SEGGER_RTT_WriteString(0, "HOORAY!");
 	}
 	else

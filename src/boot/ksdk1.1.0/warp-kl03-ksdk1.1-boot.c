@@ -56,7 +56,7 @@
 #include "warp.h"
 
 #include "devSSD1331.h"
-#include "devINA219.h"
+
 
 #define WARP_FRDMKL03
 
@@ -72,6 +72,7 @@
 #	include "devBME680.h"
 #	include "devCCS811.h"
 #	include "devAMG8834.h"
+#   include "devINA219.h"
 
 //#include "devTCS34725.h"
 //#include "devSI4705.h"
@@ -84,6 +85,7 @@
 //#include "devRV8803C7.h"
 #else
 #	include "devMMA8451Q.h"
+#   include "devINA219.h"
 #endif
 
 #define WARP_BUILD_ENABLE_SEGGER_RTT_PRINTF
@@ -116,7 +118,7 @@ volatile WarpI2CDeviceState			deviceMMA8451QState;
 #endif
 
 #ifdef WARP_BUILD_ENABLE_DEVINA219
-volatile WarpI2CDeviceState			deviceINA219currentState;
+volatile WarpI2CDeviceState			deviceINA219State;
 #endif
 
 #ifdef WARP_BUILD_ENABLE_DEVLPS25H
@@ -1247,7 +1249,7 @@ main(void)
 #endif
 
 #ifdef WARP_BUILD_ENABLE_DEVINA219
-	initINA219current(   0x40 	/* i2cAddress */, 	&deviceINA219currentState	);
+	initINA219(   0x40 	/* i2cAddress */, 	&deviceINA219State	);
 #endif
 
 #ifdef WARP_BUILD_ENABLE_DEVLPS25H
@@ -1457,7 +1459,7 @@ main(void)
 		SEGGER_RTT_WriteString(0, "\r- 'z': dump all sensors data.\n");
 		OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
 
-		SEGGER_RTT_WriteString(0, "\r- ',': show current sensor reading.\n");
+		SEGGER_RTT_WriteString(0, "\r- 'q': show current sensor reading.\n");
 		OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
 
 		SEGGER_RTT_WriteString(0, "\rEnter selection> ");
@@ -1494,6 +1496,12 @@ main(void)
 				SEGGER_RTT_WriteString(0, "\r\t- '5' MMA8451Q			(0x00--0x31): 1.95V -- 3.6V\n");
 				#else
 				SEGGER_RTT_WriteString(0, "\r\t- '5' MMA8451Q			(0x00--0x31): 1.95V -- 3.6V (compiled out) \n");
+#endif
+				OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
+#ifdef WARP_BUILD_ENABLE_DEVINA219
+				SEGGER_RTT_WriteString(0, "\r\t- '5' INA219			(0x00--0x2B): 1.95V -- 3.6V\n");
+#else
+				SEGGER_RTT_WriteString(0, "\r\t- '5' INA219			(0x00--0x2B): 1.95V -- 3.6V (compiled out) \n");
 #endif
 				OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
 
@@ -1632,6 +1640,14 @@ main(void)
 					{
 						menuTargetSensor = kWarpSensorMMA8451Q;
 						menuI2cDevice = &deviceMMA8451QState;
+						break;
+					}
+#endif
+#ifdef WARP_BUILD_ENABLE_DEVINA219
+					case 'q':
+					{
+						menuTargetSensor = kWarpSensorINA219;
+						menuI2cDevice = &deviceINA219State;
 						break;
 					}
 #endif
@@ -2472,7 +2488,7 @@ main(void)
 				break;
 			}
 
-				
+			/*
 			case 'q':
 			{				
 				enableI2Cpins(menuI2cPullupValue);
@@ -2480,7 +2496,7 @@ main(void)
 				
 				break;
 			}
-
+			*/
 			/*
 			 *	Ignore naked returns.
 			 */
@@ -2621,6 +2637,10 @@ printAllSensors(bool printHeadersAndCalibration, bool hexModeFlag, int menuDelay
 		SEGGER_RTT_WriteString(0, " MMA8451 x, MMA8451 y, MMA8451 z,");
 		OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
 		#endif
+		#ifdef WARP_BUILD_ENABLE_DEVINA219
+		SEGGER_RTT_WriteString(0, "CURRENT");
+		OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
+		#endif
 		#ifdef WARP_BUILD_ENABLE_DEVMAG3110
 		SEGGER_RTT_WriteString(0, " MAG3110 x, MAG3110 y, MAG3110 z, MAG3110 Temp,");
 		OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
@@ -2687,6 +2707,9 @@ printAllSensors(bool printHeadersAndCalibration, bool hexModeFlag, int menuDelay
 		#endif
 		#ifdef WARP_BUILD_ENABLE_DEVHDC1000
 		printSensorDataHDC1000(hexModeFlag);
+		#endif
+		#ifdef WARP_BUILD_ENABLE_DEVINA219
+		readSensorRegisterINA219(0x04);
 		#endif
 	
 
@@ -3339,6 +3362,30 @@ repeatRegisterReadForDeviceAndAddress(WarpSensorDevice warpSensorDevice, uint8_t
 			SEGGER_RTT_WriteString(0, "\r\n\tAS7263 Read Aborted. Device Disabled :( ");
 #endif
 			break;
+		}
+
+		case kWarpSensorINA219:
+		{
+#ifdef WARP_BUILD_ENABLE_DEVINA219
+			loopForSensor(  "\r\nINA219:\n\r",              /*      tagString                       */
+					&readSensorRegisterINA219,      /*      readSensorRegisterFunction      */
+	                &deviceINA219State,             /*      i2cDeviceState                  */
+                    NULL,                           /*      spiDeviceState                  */
+				    baseAddress,                    /*      baseAddress                     */
+					0x00,                           /*      minAddress                      */
+                    0x2B,                           /*      maxAddress                      */
+                    repetitionsPerAddress,          /*      repetitionsPerAddress           */
+                    chunkReadsPerAddress,           /*      chunkReadsPerAddress            */
+                    spinDelay,                      /*      spinDelay                       */
+                    autoIncrement,                  /*      autoIncrement                   */
+	                sssupplyMillivolts,             /*      sssupplyMillivolts              */
+                    referenceByte,                  /*      referenceByte                   */
+                    adaptiveSssupplyMaxMillivolts,  /*      adaptiveSssupplyMaxMillivolts   */
+                    chatty                          /*      chatty                          */
+				   );
+#endif
+			break;
+
 		}
 
 		default:
