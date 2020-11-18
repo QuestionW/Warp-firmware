@@ -462,7 +462,7 @@ disableSPIpins(void)
 
 
 void
-enableI2Cpins(uint16_t pullupValue)
+enableI2Cpins(uint8_t pullupValue)
 {
 	CLOCK_SYS_EnableI2cClock(0);
 
