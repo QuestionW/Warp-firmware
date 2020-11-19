@@ -1459,9 +1459,6 @@ main(void)
 		SEGGER_RTT_WriteString(0, "\r- 'z': dump all sensors data.\n");
 		OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
 
-		SEGGER_RTT_WriteString(0, "\r- 'q': show current sensor reading.\n");
-		OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
-
 		SEGGER_RTT_WriteString(0, "\rEnter selection> ");
 		OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
 		key = SEGGER_RTT_WaitKey();
