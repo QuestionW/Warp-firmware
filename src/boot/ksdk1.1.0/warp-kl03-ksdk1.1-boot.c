@@ -2488,15 +2488,15 @@ main(void)
 				break;
 			}
 
-			/*
+			
 			case 'q':
 			{				
 				enableI2Cpins(menuI2cPullupValue);
-				readSensorRegisterINA219(0x04);
+				printSensorDataINA219();
 				
 				break;
 			}
-			*/
+			
 			/*
 			 *	Ignore naked returns.
 			 */
@@ -2709,7 +2709,7 @@ printAllSensors(bool printHeadersAndCalibration, bool hexModeFlag, int menuDelay
 		printSensorDataHDC1000(hexModeFlag);
 		#endif
 		#ifdef WARP_BUILD_ENABLE_DEVINA219
-		readSensorRegisterINA219(0x04);
+		printSensorDataINA219();
 		#endif
 	
 
