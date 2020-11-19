@@ -126,7 +126,7 @@ printSensorDataINA219()
         //SEGGER_RTT_printf(0, "\n%d", readSensorRegisterValueCombined * 4);
 
 	
-    for (i = 0; i < 1000; ++1)
+    for (int i = 0; i < 1000; ++i)
     {
         // Set pointer address to Shunt Voltage (0x01 from data sheet)
         writeSensorRegisterINA219(0x01,0x00,0x00,1);
@@ -136,7 +136,7 @@ printSensorDataINA219()
         readSensorRegisterValueLSB = deviceINA219State.i2cBuffer[1];
         readSensorRegisterValueCombined = ((readSensorRegisterValueMSB & 0xFF) << 8) | (readSensorRegisterValueLSB & 0xFF);
         //SEGGER_RTT_printf(0, "\nShunt Voltage Reading: %d, giving Shunt Voltage: %duV, giving Current: %duA", readSensorRegisterValueCombined,readSensorRegisterValueCombined*10, readSensorRegisterValueCombined*100);
-        SEGGER_RTT_printf(0, "\n%d", int(readSensorRegisterValueCombined * 0.1));
+        SEGGER_RTT_printf(0, "\n%d", readSensorRegisterValueCombined * 0.1);
     }
         
 
