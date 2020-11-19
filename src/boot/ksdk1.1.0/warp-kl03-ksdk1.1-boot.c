@@ -1499,9 +1499,9 @@ main(void)
 #endif
 				OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
 #ifdef WARP_BUILD_ENABLE_DEVINA219
-				SEGGER_RTT_WriteString(0, "\r\t- 'Q' INA219			(0x00--0x2B): 1.95V -- 3.6V\n");
+				SEGGER_RTT_WriteString(0, "\r\t- 'q' INA219			(0x00--0x2B): 1.95V -- 3.6V\n");
 #else
-				SEGGER_RTT_WriteString(0, "\r\t- 'Q' INA219			(0x00--0x2B): 1.95V -- 3.6V (compiled out) \n");
+				SEGGER_RTT_WriteString(0, "\r\t- 'q' INA219			(0x00--0x2B): 1.95V -- 3.6V (compiled out) \n");
 #endif
 				OSA_TimeDelay(gWarpMenuPrintDelayMilliseconds);
 
@@ -2489,17 +2489,6 @@ main(void)
 			}
 
 			
-			case 'q':
-			{				
-				for (int i = 0; i < 1000; ++i)
-				{
-					enableI2Cpins(menuI2cPullupValue);
-					printSensorDataINA219();
-				}				
-				
-				break;
-			}
-			
 			/*
 			 *	Ignore naked returns.
 			 */
@@ -2712,7 +2701,7 @@ printAllSensors(bool printHeadersAndCalibration, bool hexModeFlag, int menuDelay
 		printSensorDataHDC1000(hexModeFlag);
 		#endif
 		#ifdef WARP_BUILD_ENABLE_DEVINA219
-		printSensorDataINA219();
+		readSensorRegisterINA219(0x04);
 		#endif
 	
 
