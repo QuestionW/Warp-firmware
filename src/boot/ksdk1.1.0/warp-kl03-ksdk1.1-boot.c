@@ -2491,8 +2491,11 @@ main(void)
 			
 			case 'q':
 			{				
-				enableI2Cpins(menuI2cPullupValue);
-				printSensorDataINA219();
+				for (int i = 0; i < 1000; ++i)
+				{
+					enableI2Cpins(menuI2cPullupValue);
+					printSensorDataINA219();
+				}				
 				
 				break;
 			}
